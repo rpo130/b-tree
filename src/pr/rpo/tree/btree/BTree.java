@@ -1,16 +1,31 @@
-package pr.rpo.tree;
+package pr.rpo.tree.btree;
 
-import java.util.List;
-
+/**
+ * 原始B树
+ */
 public class BTree {
+    private final int M = 4;
+    //阶
     private int m;
+
     private Node root;
+
+    //树高度
     private int height;
+
+    //元素数量
     private int n;
+
+    public BTree() {
+        this.m = M;
+        root = null;
+        this.height = 0;
+        this.n = 0;
+    }
 
     public BTree(int order) {
         this.m = order;
-        this.root = new Node(order);
+        this.root = null;
     }
 
     public int size() {
@@ -31,7 +46,7 @@ public class BTree {
         }
     }
 
-    public boolean contains(String key, Node node) {
+    private boolean contains(String key, Node node) {
         if(node.isEmpty()) {
             return false;
         }else {
@@ -40,13 +55,13 @@ public class BTree {
 
                 if(key.equals(k)) {
                     return true;
-                }else if(key.compareTo(k) < 0){
+                }else if(key.compareTo(k) < 0){//左子树
                     if(node.isEndNode()) {
                         return false;
                     }else {
                         return contains(key, node.childs.get(i));
                     }
-                }else {
+                }else {//右子树
                     if(i == node.size()-1) {
                         if(node.isEndNode()) {
                             return false;
@@ -63,62 +78,144 @@ public class BTree {
         return false;
     }
 
-    public void put(String key, String value) throws Exception {
-        this.insert(key, value, root);
+    public Object get(String key) {
+        Node r = root;
+
+        if(r.isEmpty()) {
+            return null;
+        }else {
+            return get(key, r);
+        }
     }
 
-    public void insert(String key, String value, Node node) throws Exception {
+    private Object get(String key, Node node) {
 
         if(node.isEmpty()) {
-            node.setKV(0, key, value);
-            n++;
+            return null;
         }else {
-            int size = node.size();
-            for(int i = size-1; i >= 0; i--) {
+            for(int i = 0; i < node.size(); i++) {
                 String k = node.keys.get(i);
-                if(key.compareTo(k) == 0) {
-                    return;
-                }else if(key.compareTo(k) > 0) {
+
+                if(key.equals(k)) {
+                    return node.vals.get(i);
+                }else if(key.compareTo(k) < 0){//左子树
                     if(node.isEndNode()) {
-                        node.setKV(i + 1, key, value);
+                        return null;
+                    }else {
+                        return get(key, node.childs.get(i));
+                    }
+                }else {//右子树
+                    if(i == node.size()-1) {
+                        if(node.isEndNode()) {
+                            return null;
+                        }else {
+                            return get(key, node.childs.get(i + 1));
+                        }
+                    }else {
+                        continue;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public void put(String key, Object value) {
+        if(root == null) {
+            root = Node.NodeCreated(key, value, m);
+            height++;
+        }else {
+            this.insert(key, value, root);
+        }
+    }
+
+    private void insert(String key, Object value, Node node) {
+
+        int size = node.size();
+        for(int i = size-1; i >= 0; i--) {
+            String k = node.keys.get(i);
+            if(key.compareTo(k) == 0) {
+                System.out.println("ele already exist");
+                return;
+            }else if(key.compareTo(k) > 0) {//右子树
+                if(node.isEndNode()) {
+                    node.setKV(i + 1, key, value);
+                    n++;
+                    if(node.size() >= m) {
+                        split(node);
+                    }
+                }else {
+                    insert(key, value, node.childs.get(i+1));
+                }
+                break;
+            }else {//左子树
+                if(node.isEndNode()) {
+                    node.setKV(i+1, node.keys.get(i), node.vals.get(i));
+
+                    if(i == 0) {
+                        node.setKV(0, key, value);
                         n++;
                         if(node.size() >= m) {
                             split(node);
                         }
-                    }else {
-                        insert(key, value, node.childs.get(i+1));
+                        break;
                     }
-                    break;
+
                 }else {
-                    if(node.isEndNode()) {
-                        node.setKV(i+1, node.keys.get(i), node.vals.get(i));
-
-                        if(i == 0) {
-                            node.setKV(0, key, value);
-                            n++;
-                            if(node.size() >= m) {
-                                split(node);
-                            }
-                            break;
-                        }
-
-                    }else {
-                        if(i == 0) {
-                            insert(key, value, node.childs.get(0));
-                            break;
-                        }
+                    if(i == 0) {
+                        insert(key, value, node.childs.get(0));
+                        break;
                     }
                 }
             }
-
         }
     }
 
-    public void split(Node node) throws Exception {
+    public void delete(String key) {
+        if(root != null) {
+            delete(key, root);
+        }
+    }
+
+    private void delete(String key, Node node) {
+        int size = node.size();
+        for(int i = size - 1; i >= 0; i--) {
+            String k = node.keys.get(i);
+            if(key.compareTo(k) == 0) {
+                if(node.isEndNode()) {
+                    node.keys.remove(i);
+                    node.vals.remove(i);
+                    System.out.println("delete success");
+                }
+                n--;
+                return ;
+            }else if(key.compareTo(k) > 0) {
+                if(node.isEndNode()) {
+                    return ;
+                }else {
+                    delete(key, node.childs.get(i+1));
+                }
+            }else {
+
+                if(i == 0) {
+                    if(node.isEndNode()) {
+                        return ;
+                    }else {
+                        delete(key, node.childs.get(i));
+                    }
+                }else {
+                    continue;
+                }
+            }
+        }
+    }
+
+    //节点分裂
+    public void split(Node node) {
         int midSize = Math.round(node.size()/2);
 
         String fnkey = node.keys.get(midSize);
-        String fnval = node.vals.get(midSize);
+        Object fnval = node.vals.get(midSize);
 
         Node ln = new Node(m);
         for(int i = 0; i < midSize; i++) {
@@ -134,7 +231,7 @@ public class BTree {
         }
 
         Node rn = new Node(m);
-        int i = 0;
+        int i;
         for(i = midSize+1; i < node.size(); i++) {
             rn.setKV(i-midSize-1, node.keys.get(i), node.vals.get(i));
             if(!node.isEndNode()) {
@@ -209,7 +306,7 @@ public class BTree {
     }
 
     public static void main(String[] args) throws Exception {
-        BTree st = new BTree(4);
+        BTree st = new BTree();
 
         st.put("www.cs.princeton.edu", "128.112.136.12");
         st.put("www.cs.princeton.edu", "128.112.136.11");
@@ -239,6 +336,7 @@ public class BTree {
         System.out.println("size:    " + st.size());
         System.out.println("height:  " + st.height());
         System.out.println();
+        st.delete("www.apple.com");
         System.out.println(st.toString());
     }
 }

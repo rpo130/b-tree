@@ -1,15 +1,25 @@
-package pr.rpo.tree;
+package pr.rpo.tree.btree;
 
 import java.util.ArrayList;
 import java.util.List;
 
+//BTREE 节点
 public class Node {
+    //阶
     public int m;
+
+    //父节点
     public Node father;
+
     public List<String> keys;
-    public List<String> vals;
+    public List<Object> vals;
     public List<Node> childs;
 
+    public static Node NodeCreated(String key, Object val, int order) {
+        Node nn = new Node(order);
+        nn.addKV(0, key, val);
+        return nn;
+    }
 
     public Node(int order) {
         if(order < 2) {
@@ -43,6 +53,7 @@ public class Node {
         return this.size() == 0;
      }
 
+     //已经处于最底层
     public boolean isEndNode() {
         boolean empty = true;
         for(Node s : childs) {
@@ -53,13 +64,13 @@ public class Node {
         return empty;
     }
 
-    public void setKV(int index, String key, String value) {
+    public void setKV(int index, String key, Object value) {
         if(index >= m) throw new IllegalArgumentException("数组越界");
         keys.set(index, key);
         vals.set(index, value);
     }
 
-    public void addKV(int index, String key, String value) {
+    public void addKV(int index, String key, Object value) {
         keys.add(index, key);
         keys.remove(m);
         vals.add(index, value);
