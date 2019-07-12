@@ -1,9 +1,14 @@
 package pr.rpo.tree.btree;
 
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.function.Consumer;
+
 /**
  * 原始B树
  */
-public class BTree {
+public class BTree implements Serializable {
+    //默认阶
     private final int M = 4;
     //阶
     private int m;
@@ -18,9 +23,7 @@ public class BTree {
 
     public BTree() {
         this.m = M;
-        root = null;
-        this.height = 0;
-        this.n = 0;
+        this.root = null;
     }
 
     public BTree(int order) {
@@ -51,7 +54,7 @@ public class BTree {
             return false;
         }else {
             for(int i = 0; i < node.size(); i++) {
-                String k = node.keys.get(i);
+                String k = node.keys[i];
 
                 if(key.equals(k)) {
                     return true;
@@ -59,14 +62,14 @@ public class BTree {
                     if(node.isEndNode()) {
                         return false;
                     }else {
-                        return contains(key, node.childs.get(i));
+                        return contains(key, node.childs[i]);
                     }
                 }else {//右子树
                     if(i == node.size()-1) {
                         if(node.isEndNode()) {
                             return false;
                         }else {
-                            return contains(key, node.childs.get(i + 1));
+                            return contains(key, node.childs[i + 1]);
                         }
                     }else {
                         continue;
@@ -94,22 +97,22 @@ public class BTree {
             return null;
         }else {
             for(int i = 0; i < node.size(); i++) {
-                String k = node.keys.get(i);
+                String k = node.keys[i];
 
                 if(key.equals(k)) {
-                    return node.vals.get(i);
+                    return node.vals[i];
                 }else if(key.compareTo(k) < 0){//左子树
                     if(node.isEndNode()) {
                         return null;
                     }else {
-                        return get(key, node.childs.get(i));
+                        return get(key, node.childs[i]);
                     }
                 }else {//右子树
                     if(i == node.size()-1) {
                         if(node.isEndNode()) {
                             return null;
                         }else {
-                            return get(key, node.childs.get(i + 1));
+                            return get(key, node.childs[i + 1]);
                         }
                     }else {
                         continue;
@@ -124,6 +127,7 @@ public class BTree {
         if(root == null) {
             root = Node.NodeCreated(key, value, m);
             height++;
+            n++;
         }else {
             this.insert(key, value, root);
         }
@@ -133,9 +137,8 @@ public class BTree {
 
         int size = node.size();
         for(int i = size-1; i >= 0; i--) {
-            String k = node.keys.get(i);
+            String k = node.keys[i];
             if(key.compareTo(k) == 0) {
-                System.out.println("ele already exist");
                 return;
             }else if(key.compareTo(k) > 0) {//右子树
                 if(node.isEndNode()) {
@@ -145,12 +148,12 @@ public class BTree {
                         split(node);
                     }
                 }else {
-                    insert(key, value, node.childs.get(i+1));
+                    insert(key, value, node.childs[i+1]);
                 }
                 break;
             }else {//左子树
                 if(node.isEndNode()) {
-                    node.setKV(i+1, node.keys.get(i), node.vals.get(i));
+                    node.setKV(i+1, node.keys[i], node.vals[i]);
 
                     if(i == 0) {
                         node.setKV(0, key, value);
@@ -163,7 +166,7 @@ public class BTree {
 
                 }else {
                     if(i == 0) {
-                        insert(key, value, node.childs.get(0));
+                        insert(key, value, node.childs[0]);
                         break;
                     }
                 }
@@ -180,11 +183,10 @@ public class BTree {
     private void delete(String key, Node node) {
         int size = node.size();
         for(int i = size - 1; i >= 0; i--) {
-            String k = node.keys.get(i);
+            String k = node.keys[i];
             if(key.compareTo(k) == 0) {
                 if(node.isEndNode()) {
-                    node.keys.remove(i);
-                    node.vals.remove(i);
+                    node.removeKV(i);
                     System.out.println("delete success");
                 }
                 n--;
@@ -193,7 +195,7 @@ public class BTree {
                 if(node.isEndNode()) {
                     return ;
                 }else {
-                    delete(key, node.childs.get(i+1));
+                    delete(key, node.childs[i+1]);
                 }
             }else {
 
@@ -201,7 +203,7 @@ public class BTree {
                     if(node.isEndNode()) {
                         return ;
                     }else {
-                        delete(key, node.childs.get(i));
+                        delete(key, node.childs[i]);
                     }
                 }else {
                     continue;
@@ -214,34 +216,35 @@ public class BTree {
     public void split(Node node) {
         int midSize = Math.round(node.size()/2);
 
-        String fnkey = node.keys.get(midSize);
-        Object fnval = node.vals.get(midSize);
+        String fnkey = node.keys[midSize];
+        Object fnval = node.vals[midSize];
 
         Node ln = new Node(m);
+
         for(int i = 0; i < midSize; i++) {
-            ln.setKV(i, node.keys.get(i), node.vals.get(i));
+            ln.setKV(i, node.keys[i], node.vals[i]);
             if(!node.isEndNode()) {
-                ln.setChild(i, node.childs.get(i));
-                node.childs.get(i).father = ln;
+                ln.setChild(i, node.childs[i]);
+                node.childs[i].father = ln;
             }
         }
         if(!node.isEndNode()) {
-            ln.setChild(midSize, node.childs.get(midSize));
-            node.childs.get(midSize).father = ln;
+            ln.setChild(midSize, node.childs[midSize]);
+            node.childs[midSize].father = ln;
         }
 
         Node rn = new Node(m);
         int i;
         for(i = midSize+1; i < node.size(); i++) {
-            rn.setKV(i-midSize-1, node.keys.get(i), node.vals.get(i));
+            rn.setKV(i-midSize-1, node.keys[i], node.vals[i]);
             if(!node.isEndNode()) {
-                rn.setChild(i-midSize-1, node.childs.get(i));
-                node.childs.get(i).father = rn;
+                rn.setChild(i-midSize-1, node.childs[i]);
+                node.childs[i].father = rn;
             }
         }
         if(!node.isEndNode()) {
-           rn.setChild(i-midSize-1, node.childs.get(node.size()));
-           node.childs.get(node.size()).father = rn;
+           rn.setChild(i-midSize-1, node.childs[node.size()]);
+           node.childs[node.size()].father = rn;
         }
 
         //root
@@ -256,8 +259,13 @@ public class BTree {
             height++;
         }else {
             Node fn = node.father;
-            //int i;
-            i = fn.childs.indexOf(node);
+
+            for(int ii = 0; ii <= fn.size(); ii++) {
+                if(fn.childs[ii].hashCode() == node.hashCode()) {
+                    i = ii;
+                    break;
+                }
+            }
 
             fn.addKV(i, fnkey, fnval);
             rn.father = fn;
@@ -268,7 +276,6 @@ public class BTree {
             if(fn.size() >= m) {
                 split(fn);
             }
-
         }
     }
 
@@ -292,20 +299,50 @@ public class BTree {
             }else {
                 if(node.isEndNode()) {
                     for(int i = 0; i < node.size(); i++) {
-                        sb.append(prefix + "(" +node.keys.get(i) + "-" + node.vals.get(i) + ")" + "\n");
+                        sb.append(prefix + "(" +node.keys[i] + "-" + node.vals[i] + ")" + "\n");
                     }
                 }else {
                     for (int i = 0; i < node.size(); i++) {
-                        sb.append(toString(node.childs.get(i), prefix + "    "));
-                        sb.append(prefix + "(" +node.keys.get(i) + "-" + node.vals.get(i) + ")" + "\n");
+                        sb.append(toString(node.childs[i], prefix + "    "));
+                        sb.append(prefix + "(" +node.keys[i] + "-" + node.vals[i] + ")" + "\n");
                     }
-                    sb.append(toString(node.childs.get(node.size()), prefix + "    "));
+                    sb.append(toString(node.childs[node.size()], prefix + "    "));
                 }
             }
             return sb.toString();
     }
 
-    public static void main(String[] args) throws Exception {
+    public void travel() {
+        travelInDepth(root);
+    }
+
+    private void travelInDepth(Node node) {
+        if (node == null) return;
+        //深度优先便利
+        for(int i = 0; i < node.size(); i++) {
+            System.out.println(node.keys[i] + "-" + node.vals[i]);
+        }
+
+        for(int i = 0; i <= node.size(); i++) {
+            travelInDepth(node.childs[i]);
+        }
+    }
+
+    public void travelNode(Consumer<Node> consumer) {
+        travelNode(root, consumer);
+    }
+
+    public void travelNode(Node node, Consumer consumer) {
+        if (node == null) return;
+
+        consumer.accept(node);
+
+        for(int i = 0; i <= node.size(); i++) {
+            travelNode(node.childs[i], consumer);
+        }
+    }
+
+    public static void main(String[] args) {
         BTree st = new BTree();
 
         st.put("www.cs.princeton.edu", "128.112.136.12");
@@ -326,17 +363,10 @@ public class BTree {
         st.put("www.weather.com",      "63.111.66.11");
         st.put("www.yahoo.com",        "216.109.118.65");
 
-        System.out.println("cs.princeton.edu:  " + st.contains("www.cs.princeton.edu"));
-        System.out.println("hardvardsucks.com: " + st.contains("www.harvardsucks.com"));
-        System.out.println("simpsons.com:      " + st.contains("www.simpsons.com"));
-        System.out.println("apple.com:         " + st.contains("www.apple.com"));
-        System.out.println("ebay.com:          " + st.contains("www.ebay.com"));
-        System.out.println("dell.com:          " + st.contains("www.dell.com"));
-
         System.out.println("size:    " + st.size());
         System.out.println("height:  " + st.height());
         System.out.println();
-        st.delete("www.apple.com");
-        System.out.println(st.toString());
+//        System.out.println(st.toString());
+        st.travelNode(e -> System.out.println(Arrays.toString(e.keys) + "-size" + e.size()));
     }
 }

@@ -9,7 +9,7 @@ import java.util.Map;
 public class SqlParser {
     String operator = null;
     String key = null;
-    String[] params = null;
+    String params = null;
 
     public boolean parser(String sql) {
         Tokener tokener = new Tokener(sql);
@@ -27,8 +27,8 @@ public class SqlParser {
     }
 
     private void parseInsert(Tokener tokener) {
-        params = tokener.rest();
         key = tokener.next();
+        params = tokener.next();
     }
 
     private void parseSelect(Tokener tokener) {
@@ -52,8 +52,8 @@ public class SqlParser {
     public Map<String, String> execute(BTree bTree) {
         Map<String, String> m = new HashMap(1);
         switch(operator) {
-            case "insert":bTree.put(key, params);m.put("result", "success");break;
-            case "select":m.put("result", Arrays.toString((String[])bTree.get(key)));break;
+            case "insert":bTree.put(key,  params);m.put("result", "success");break;
+            case "select":m.put("result", (String)bTree.get(key));break;
             case "delete":bTree.delete(key);m.put("result", "success");break;
             default:;
         }

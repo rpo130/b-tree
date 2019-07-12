@@ -1,19 +1,18 @@
 package pr.rpo.tree.btree;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Serializable;
 
 //BTREE 节点
-public class Node {
+public class Node implements Serializable {
     //阶
     public int m;
 
     //父节点
     public Node father;
 
-    public List<String> keys;
-    public List<Object> vals;
-    public List<Node> childs;
+    public String[] keys;
+    public Object[] vals;
+    public Node[] childs;
 
     public static Node NodeCreated(String key, Object val, int order) {
         Node nn = new Node(order);
@@ -27,16 +26,11 @@ public class Node {
         }
         this.m = order;
         this.father = null;
-        this.keys = new ArrayList<>(0);
-        this.vals = new ArrayList<>(0);
-        this.childs = new ArrayList<>(0);
+        //额外加1，临时使用
+        this.keys = new String[order];
+        this.vals = new Object[order];
+        this.childs = new Node[order + 1];
 
-        for(int i = 0; i < order; i++) {
-            this.keys.add(null);
-            this.vals.add(null);
-            this.childs.add(null);
-        }
-        this.childs.add(null);
     }
 
     public int size() {
@@ -66,36 +60,46 @@ public class Node {
 
     public void setKV(int index, String key, Object value) {
         if(index >= m) throw new IllegalArgumentException("数组越界");
-        keys.set(index, key);
-        vals.set(index, value);
+        keys[index] = key;
+        vals[index] = value;
     }
 
     public void addKV(int index, String key, Object value) {
-        keys.add(index, key);
-        keys.remove(m);
-        vals.add(index, value);
-        vals.remove(m);
+        for(int i = m - 1; i > index; i--) {
+            keys[i] = keys[i-1];
+            vals[i] = vals[i-1];
+        }
+        keys[index] = key;
+        vals[index] = value;
     }
 
+    public void removeKV(int index) {
+        for(int i = index; i < m - 1; i++) {
+            keys[i] = keys[i+1];
+            vals[i] = vals[i+1];
+        }
+    }
 
     public void setChild(int index, Node child) {
-        if(index >= m+1) throw new IllegalArgumentException("数组越界");
-        childs.set(index, child);
+        if(index >= m) throw new IllegalArgumentException("数组越界");
+        childs[index] = child;
     }
 
     public void addChild(int index, Node child) {
-        childs.add(index, child);
-        childs.remove(m+1);
+        for(int i = m; i > index; i--) {
+            childs[i] = childs[i-1];
+        }
+        childs[index] = child;
     }
 
     public void empty() {
         int i = 0;
         for(i = 0; i < m; i++) {
-            this.keys.set(i, null);
-            this.vals.set(i, null);
-            this.childs.set(i, null);
+            this.keys[i] = null;
+            this.vals[i] = null;
+            this.childs[i] = null;
         }
-        this.childs.set(i, null);
+        this.childs[i] = null;
     }
 
     public static void main(String[] args) throws Exception {
