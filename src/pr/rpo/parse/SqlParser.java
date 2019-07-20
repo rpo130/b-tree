@@ -2,67 +2,70 @@ package pr.rpo.parse;
 
 import pr.rpo.tree.btree.BTree;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.text.ParseException;
+import java.util.*;
 
 public class SqlParser {
-    String operator = null;
-    String key = null;
-    String params = null;
+    ASTree asTree = null;
 
-    public boolean parser(String sql) {
+    public boolean parser(String sql) throws ParseException {
         Tokener tokener = new Tokener(sql);
-
-        String op = tokener.next();
-
-        switch(op) {
-            case "insert":parseInsert(tokener);operator = op;break;
-            case "select":parseSelect(tokener);operator = op;break;
-            case "delete":parseDelete(tokener);operator = op;break;
-            default:return false;
+        ASTLeaf operator = operator(tokener);
+        ASTLeaf key = key(tokener);
+        if(operator.token().getWord().equals("set")) {
+            ASTLeaf value = value(tokener);
+            asTree = new ASTree(Arrays.asList(operator,key,value));
+        }else {
+            asTree = new ASTree(Arrays.asList(operator,key));
         }
 
         return true;
     }
 
-    private void parseInsert(Tokener tokener) {
-        key = tokener.next();
-        params = tokener.next();
+    private ASTLeaf operator(Tokener tokener) throws ParseException {
+        List<String> OP = new ArrayList<String>();
+        OP.add("set");OP.add("get");OP.add("delete");
+        Token t = tokener.peekToken();
+        if(!OP.contains(t.getWord()))
+            throw new ParseException("",t.getIndex());
+        return new ASTLeaf(tokener.nextToken());
     }
 
-    private void parseSelect(Tokener tokener) {
-        key = tokener.next();
+    private ASTLeaf key(Tokener tokener) throws ParseException {
+        if(!tokener.hasToken()) throw new ParseException("",1);
+        return new ASTLeaf(tokener.nextToken());
     }
 
-    private void parseDelete(Tokener tokener) {
-        key = tokener.next();
+    private ASTLeaf value(Tokener tokener) throws ParseException {
+        if(!tokener.hasToken()) throw new ParseException("",1);
+        return new ASTLeaf(tokener.nextToken());
     }
-
 
     public void print() {
-        System.out.println("operator:" + operator);
-        System.out.println("key:" + key);
-        System.out.println("params:");
-        if(params == null) return;
-        Arrays.asList(params).forEach(e -> System.out.print(e + " "));
+        System.out.println(asTree.toString());
+    }
 
+    public ASTree asTree() {
+        return asTree;
     }
 
     public Map<String, String> execute(BTree bTree) {
         Map<String, String> m = new HashMap(1);
-        switch(operator) {
-            case "insert":bTree.put(key,  params);m.put("result", "success");break;
-            case "select":m.put("result", (String)bTree.get(key));break;
+
+        String key = ((ASTLeaf)asTree.child(1)).token().getWord();
+
+        switch(((ASTLeaf)asTree.child(0)).token().getWord())  {
+            case "set":bTree.put(key, ((ASTLeaf)asTree.child(2)).token().getWord());m.put("result", "success");break;
+            case "get":m.put("result", (String)bTree.get(key));break;
             case "delete":bTree.delete(key);m.put("result", "success");break;
             default:;
         }
         return m;
     }
 
-    public static void main(String[] args) {
-        final String INSERT_SQL = "insert (peter,22,\"二十二\")";
-        final String SELECT_SQL = "select peter";
+    public static void main(String[] args) throws ParseException {
+        final String INSERT_SQL = "set peter 22";
+        final String SELECT_SQL = "get peter";
         final String DELETE_SQL = "delete peter";
 
         SqlParser sqlParser = new SqlParser();

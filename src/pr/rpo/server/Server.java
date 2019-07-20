@@ -3,15 +3,13 @@ package pr.rpo.server;
 import pr.rpo.parse.SqlParser;
 import pr.rpo.tree.btree.BTree;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.text.ParseException;
 import java.util.Scanner;
 
 public class Server {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         File file = new File("./a.db");
         BTree bTree;
         if(!file.exists()) {
@@ -34,10 +32,9 @@ public class Server {
         while(true) {
             System.out.print("$:");
             Scanner s = new Scanner(System.in);
+            String command = s.nextLine();
 
-            String sql = s.nextLine();
-            System.out.println("you type :" + sql);
-            if(sql.equals("save")) {
+            if(command.equals("save")) {
                 Block block = new Block();
                 try {
                     block.from(bTree);
@@ -45,14 +42,21 @@ public class Server {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-            }else if(sql.equals("show")){
+            }else if(command.equals("show")){
                 System.out.println(bTree.toString());
+            }else if(command.equals("quit")) {
+                System.out.print("good byte");
+                return;
             }else {
-                SqlParser sqlParser = new SqlParser();
-                System.out.println("parse result:" + sqlParser.parser(sql));
-                sqlParser.print();
-                System.out.println("result:" + sqlParser.execute(bTree));
-                System.out.println();
+                try {
+                    SqlParser sqlParser = new SqlParser();
+                    System.out.println("parse result:" + sqlParser.parser(command));
+                    sqlParser.print();
+                    System.out.println("result:" + sqlParser.execute(bTree));
+                    System.out.println();
+                }catch (ParseException e) {
+                    System.out.println("命令不合法");
+                }
             }
         }
     }
