@@ -12,11 +12,11 @@ class SqlParserTest {
     final String SELECT_SQL = "get peter";
     final String DELETE_SQL = "delete peter";
 
-    SqlParser sqlParser;
+    KvParser sqlParser;
 
     @BeforeEach
     void setUp() {
-        sqlParser = new SqlParser();
+        sqlParser = new KvParser();
     }
 
     @Test

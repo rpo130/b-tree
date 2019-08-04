@@ -1,4 +1,4 @@
-package pr.rpo.server;
+package pr.rpo.server.util;
 
 public class ByteHelper {
 
@@ -32,5 +32,20 @@ public class ByteHelper {
         }
         return bytes;
     }
+
+    public static void transfer(byte[] bytes, int start, int x) {
+        byte[] b = int2Bytes(x);
+        for(int i = start; i < start+b.length; i++) {
+            bytes[i] = b[i-start];
+        }
+    }
+
+    public static void transfer(byte[] bytes, int start, long x) {
+        byte[] b = long2Bytes(x);
+        for(int i = start; i < start+b.length; i++) {
+            bytes[i] = b[i-start];
+        }
+    }
+
 
 }
